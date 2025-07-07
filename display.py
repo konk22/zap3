@@ -14,7 +14,6 @@ from camera import init_camera
 logging.basicConfig(filename='app.log', level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 def wrap_text(text, font, max_width):
     """Перенос текста для ограничения ширины с поддержкой переносов строк."""
     lines = []
@@ -45,7 +44,6 @@ def wrap_text(text, font, max_width):
 
     return surfaces
 
-
 def draw_spinner(screen, center, radius, angle):
     """Отрисовка спиннера."""
     points = []
@@ -58,7 +56,6 @@ def draw_spinner(screen, center, radius, angle):
 
     for x, y, alpha in points:
         pygame.draw.circle(screen, (255, 255, 255, int(alpha)), (int(x), int(y)), 5)
-
 
 def draw_progress_ring(screen, center, radius, thickness, progress):
     """Отрисовка сглаженного кольцевого прогресс-бара."""
@@ -83,7 +80,6 @@ def draw_progress_ring(screen, center, radius, thickness, progress):
             (255, 255, 255)
         )
 
-
 async def check_events():
     """Асинхронная проверка событий выхода (Ctrl+Q или ESC)."""
     for event in pygame.event.get():
@@ -98,7 +94,6 @@ async def check_events():
                 logging.info("Выход по ESC")
                 return False
     return True
-
 
 async def show_waiting_screen(screen, font, angle):
     """Экран ожидания с асинхронным вращающимся спиннером."""
@@ -115,9 +110,7 @@ async def show_waiting_screen(screen, font, angle):
         return current_angle, False
     await asyncio.sleep(0.01)
 
-    # logging.debug(f"Отображен экран ожидания с углом {current_angle}")
     return current_angle, True
-
 
 async def show_api_loading_screen(screen, font, angle):
     """Экран загрузки API с асинхронным вращающимся спиннером."""
@@ -134,9 +127,7 @@ async def show_api_loading_screen(screen, font, angle):
         return current_angle, False
     await asyncio.sleep(0.01)
 
-    # logging.debug(f"Отображен экран загрузки API с углом {current_angle}")
     return current_angle, True
-
 
 async def show_error(screen, font, message, duration=5):
     """Отображение сообщения об ошибке на экране."""
@@ -157,7 +148,6 @@ async def show_error(screen, font, message, duration=5):
     logging.info(f"Отображено сообщение об ошибке: {message}")
     return True
 
-
 def show_result(screen, photo_path, dossier, request_number):
     """Отображение фото и досье на экране с опциональным озвучиванием."""
     font = pygame.font.SysFont("arial", 36)
@@ -166,7 +156,7 @@ def show_result(screen, photo_path, dossier, request_number):
     qr_prompt_font = pygame.font.SysFont("arial", 30)
 
     qr_prompt_text = QR_TEXT
-    qr_prompt_lines = wrap_text(qr_prompt_text, qr_prompt_font, DISPLAY_WIDTH // 2 - 140)  # Уменьшенная ширина для размещения справа от таймера
+    qr_prompt_lines = wrap_text(qr_prompt_text, qr_prompt_font, DISPLAY_WIDTH // 2 - 140)
 
     try:
         image = pygame.image.load(photo_path)
@@ -203,7 +193,7 @@ def show_result(screen, photo_path, dossier, request_number):
     line_index = 0
     alpha = 0
     header_alpha = 255
-    while running and line_index <= len(text_surfaces):
+    while running and line_index < len(text_surfaces):
         screen.fill((0, 0, 0))
         screen.blit(image, (DISPLAY_WIDTH // 2, 0))
 
@@ -217,21 +207,23 @@ def show_result(screen, photo_path, dossier, request_number):
                 y_offset += 40
 
         for i in range(line_index):
-            if i < len(text_surfaces):
+            if i < len(text_surfaces) and text_surfaces[i]:
                 surface = text_surfaces[i]
                 surface.set_alpha(255)
                 screen.blit(surface, (20, y_offset + 60 + i * 40))
             else:
-                y_offset += 40  # Увеличиваем отступ для пустых строк
-      
-        if line_index < len(text_surfaces):
+                y_offset += 40
+
+        if line_index < len(text_surfaces) and text_surfaces[line_index]:
             text_surfaces[line_index].set_alpha(alpha)
             screen.blit(text_surfaces[line_index], (20, y_offset + 60 + line_index * 40))
-
-        alpha += 10
-        if alpha >= 255:
-            alpha = 0
-            line_index += 1
+            alpha += 10
+            if alpha >= 255:
+                alpha = 0
+                line_index += 1
+                pygame.time.wait(TEXT_SPEED)
+        else:
+            line_index += 1  # Пропускаем пустую строку
             pygame.time.wait(TEXT_SPEED)
 
         pygame.display.flip()
@@ -241,7 +233,7 @@ def show_result(screen, photo_path, dossier, request_number):
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q and event.mod & pygame.KMOD_CTRL:
-                    logging.info("Выход по Ctrl+D")
+                    logging.info("Выход по Ctrl+Q")
                     running = False
                 if event.key == pygame.K_ESCAPE:
                     logging.info("Выход по ESC")
@@ -272,7 +264,7 @@ def show_result(screen, photo_path, dossier, request_number):
                     surface.set_alpha(255)
                     screen.blit(surface, (20, y_offset + 60 + i * 40))
                 else:
-                    y_offset += 40  # Увеличиваем отступ для пустых строк
+                    y_offset += 40
             pygame.display.flip()
 
             for event in pygame.event.get():
@@ -280,7 +272,7 @@ def show_result(screen, photo_path, dossier, request_number):
                     running = False
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q and event.mod & pygame.KMOD_CTRL:
-                        logging.info("Выход по Ctrl+D")
+                        logging.info("Выход по Ctrl+Q")
                         running = False
                     if event.key == pygame.K_ESCAPE:
                         logging.info("Выход по ESC")
@@ -316,7 +308,7 @@ def show_result(screen, photo_path, dossier, request_number):
                 surface.set_alpha(255)
                 screen.blit(surface, (20, y_offset + 60 + i * 40))
             else:
-                y_offset += 40  # Увеличиваем отступ для пустых строк
+                y_offset += 40
 
         elapsed = (pygame.time.get_ticks() / 1000) - start_time
         remaining_time = max(0, total_duration - elapsed)
@@ -334,11 +326,10 @@ def show_result(screen, photo_path, dossier, request_number):
             timer_rect = timer_surface.get_rect(center=ring_center)
             screen.blit(timer_surface, timer_rect)
 
-        # Отображение текста о QR-коде справа от таймера
-        qr_x_offset = 120  # 60 (центр кольца) + 40 (радиус) + 20 (отступ)
-        qr_y_center = DISPLAY_HEIGHT - 60  # Вертикальный центр кольца
-        total_qr_height = len(qr_prompt_lines) * 30  # 30 пикселей на строку
-        qr_y_offset = qr_y_center - total_qr_height // 2  # Центрирование по вертикали
+        qr_x_offset = 120
+        qr_y_center = DISPLAY_HEIGHT - 60
+        total_qr_height = len(qr_prompt_lines) * 30
+        qr_y_offset = qr_y_center - total_qr_height // 2
         for i, surface in enumerate(qr_prompt_lines):
             if surface:
                 qr_rect = surface.get_rect(left=qr_x_offset, top=qr_y_offset + i * 30)
@@ -351,7 +342,7 @@ def show_result(screen, photo_path, dossier, request_number):
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q and event.mod & pygame.KMOD_CTRL:
-                    logging.info("Выход по Ctrl+D")
+                    logging.info("Выход по Ctrl+Q")
                     running = False
                 if event.key == pygame.K_ESCAPE:
                     logging.info("Выход по ESC")
