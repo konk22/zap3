@@ -140,7 +140,7 @@ async def main():
                         continue
                 except Exception as e:
                     logging.error(f"Ошибка отображения результата: {str(e)}")
-                    # await display.show_error(screen, font, f"Ошибка отображения: {str(e)}")
+                    await display.show_error(screen, font, f"Ошибка отображения: {str(e)}")
             else:
                 await display.show_error(screen, font, "Ошибка соединения с API. Попробуйте снова.")
                 if os.path.exists(photo_path):
