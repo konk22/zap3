@@ -149,7 +149,7 @@ async def show_error(screen, font, message, duration=5):
     return True
 
 def show_result(screen, photo_path, dossier, request_number):
-    """Отображение фото и досье на экране с опциональным озвучиванием."""
+    """Отображение фото и досье на экране с опциональным озвучиванием и скроллингом текста во время появления."""
     font = pygame.font.SysFont("arial", 36)
     bold_font = pygame.font.SysFont("arial", 36, bold=True)
     timer_font = pygame.font.SysFont("arial", 24)
@@ -188,6 +188,15 @@ def show_result(screen, photo_path, dossier, request_number):
             return False
 
     header_height = sum(surface.get_height() if surface else 40 for surface in header_surfaces)
+    scroll_area_top = header_height + 20 + 1
+    scroll_area_bottom = DISPLAY_HEIGHT - 160  # Увеличиваем буфер до 160, чтобы таймер не перекрывал текст
+    scroll_area_height = scroll_area_bottom - scroll_area_top
+    scroll_rect = pygame.Rect(20, scroll_area_top, max_text_width, scroll_area_height)
+    scroll_surface = screen.subsurface(scroll_rect)
+    text_height = sum(surface.get_height() if surface else 40 for surface in text_surfaces)
+    max_scroll = max(0, text_height - scroll_area_height)
+    scroll_offset = 0
+    scroll_speed = 2  # Увеличиваем скорость скроллинга для более быстрого смещения
 
     running = True
     line_index = 0
@@ -195,6 +204,7 @@ def show_result(screen, photo_path, dossier, request_number):
     header_alpha = 255
     while running and line_index < len(text_surfaces):
         screen.fill((0, 0, 0))
+        scroll_surface.fill((0, 0, 0))  # Очищаем область скроллинга
         screen.blit(image, (DISPLAY_WIDTH // 2, 0))
 
         y_offset = 20
@@ -206,17 +216,24 @@ def show_result(screen, photo_path, dossier, request_number):
             else:
                 y_offset += 40
 
+        # Проверяем, превысит ли следующая строка область таймера
+        current_y = 1
+        next_line_y = y_offset + 1 + line_index * 40
+        if line_index < len(text_surfaces) and next_line_y + (40 if not text_surfaces[line_index] else text_surfaces[line_index].get_height()) > scroll_area_bottom:
+            scroll_offset = min(scroll_offset + scroll_speed, max_scroll)
+
         for i in range(line_index):
             if i < len(text_surfaces) and text_surfaces[i]:
                 surface = text_surfaces[i]
                 surface.set_alpha(255)
-                screen.blit(surface, (20, y_offset + 60 + i * 40))
+                scroll_surface.blit(surface, (0, current_y - scroll_offset))
+                current_y += surface.get_height()
             else:
-                y_offset += 40
+                current_y += 40
 
         if line_index < len(text_surfaces) and text_surfaces[line_index]:
             text_surfaces[line_index].set_alpha(alpha)
-            screen.blit(text_surfaces[line_index], (20, y_offset + 60 + line_index * 40))
+            scroll_surface.blit(text_surfaces[line_index], (0, current_y - scroll_offset))
             alpha += 10
             if alpha >= 255:
                 alpha = 0
@@ -250,6 +267,7 @@ def show_result(screen, photo_path, dossier, request_number):
     if ALLOWED_TTS:
         while pygame.mixer.music.get_busy():
             screen.fill((0, 0, 0))
+            scroll_surface.fill((0, 0, 0))
             screen.blit(image, (DISPLAY_WIDTH // 2, 0))
             y_offset = 20
             for surface in header_surfaces:
@@ -259,12 +277,13 @@ def show_result(screen, photo_path, dossier, request_number):
                     y_offset += surface.get_height()
                 else:
                     y_offset += 40
-            for i, surface in enumerate(text_surfaces):
+            current_y = 1
+            for surface in text_surfaces:
                 if surface:
-                    surface.set_alpha(255)
-                    screen.blit(surface, (20, y_offset + 60 + i * 40))
+                    scroll_surface.blit(surface, (0, current_y - scroll_offset))
+                    current_y += surface.get_height()
                 else:
-                    y_offset += 40
+                    current_y += 40
             pygame.display.flip()
 
             for event in pygame.event.get():
@@ -292,6 +311,7 @@ def show_result(screen, photo_path, dossier, request_number):
     timer_surface = None
     while (pygame.time.get_ticks() / 1000) - start_time < total_duration:
         screen.fill((0, 0, 0))
+        scroll_surface.fill((0, 0, 0))
         screen.blit(image, (DISPLAY_WIDTH // 2, 0))
 
         y_offset = 20
@@ -303,12 +323,14 @@ def show_result(screen, photo_path, dossier, request_number):
             else:
                 y_offset += 40
 
-        for i, surface in enumerate(text_surfaces):
+        # Отрисовка текста без скроллинга
+        current_y = 1
+        for surface in text_surfaces:
             if surface:
-                surface.set_alpha(255)
-                screen.blit(surface, (20, y_offset + 60 + i * 40))
+                scroll_surface.blit(surface, (0, current_y - scroll_offset))
+                current_y += surface.get_height()
             else:
-                y_offset += 40
+                current_y += 40
 
         elapsed = (pygame.time.get_ticks() / 1000) - start_time
         remaining_time = max(0, total_duration - elapsed)
