@@ -68,6 +68,7 @@ async def main():
         (config.DISPLAY_WIDTH, config.DISPLAY_HEIGHT),
         pygame.FULLSCREEN if config.FULLSCREEN_MODE else 0
     )
+    pygame.mouse.set_visible(False)  # Отключение курсора мыши
     font = pygame.font.SysFont("arial", 36)
 
     # # Инициализация камеры
